@@ -1,0 +1,31 @@
+{
+  "name": "@co.mmons/angular-google-analytics",
+  "version": "1.0.0",
+  "author": "co.mmons",
+  "private": false,
+  "license": "MIT",
+  "scripts": {
+    "build": "ngc",
+    "install": "node-utils-npm-install-dist"
+  },
+  "dependencies": {
+    "@co.mmons/node-utils": "git+https://github.com/co-mmons/node-utils.git"
+  },
+  "peerDependencies": {
+    "@angular/common": "^5.0.0",
+    "@angular/compiler": "^5.0.0",
+    "@angular/compiler-cli": "^5.0.0",
+    "@angular/core": "^5.0.0",
+    "@angular/forms": "^5.0.0",
+    "@angular/http": "^5.0.0",
+    "@angular/platform-browser": "^5.0.0",
+    "@angular/platform-browser-dynamic": "^5.0.0",
+    "@angular/platform-server": "^5.0.0",
+    "rxjs": "^5.5.0",
+    "zone.js": "^0.8.14"
+  },
+  "devDependencies": {
+    "@types/google.analytics": "^0.0.36",
+    "typescript": "^2.6.2"
+  }
+}
