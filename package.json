@@ -8,10 +8,10 @@
     "install": "node-utils-npm-install-dist"
   },
   "dependencies": {
-    "@co.mmons/node-utils": "git+https://github.com/co-mmons/node-utils.git"
+    "@co.mmons/node-utils": "git+https://github.com/co-mmons/node-utils.git",
+    "@types/google.analytics": "^0.0.36"
   },
   "devDependencies": {
-    "@types/google.analytics": "^0.0.36",
     "typescript": "^2.6.2"
   }
 }

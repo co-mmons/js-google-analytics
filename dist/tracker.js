@@ -35,7 +35,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 var trackers = {};
-var GoogleAnalyticsTracker = /** @class */ (function () {
+var GoogleAnalyticsTracker = (function () {
     function GoogleAnalyticsTracker(id, fields) {
         this.tracker = ga.create(id, fields);
         this.tracker.set("customTask", offlineTracking);
