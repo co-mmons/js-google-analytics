@@ -31,7 +31,7 @@ export class GoogleAnalyticsTracker {
             if (!window["GoogleAnalyticsObject"]) {
 
                 let script: HTMLScriptElement = document.createElement("script");
-                script.src = this.analyticsUrl;
+                script.src = GoogleAnalyticsTracker.analyticsUrl;
                 script.onload = () => {
                     resolve();
                 };

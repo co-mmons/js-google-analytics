@@ -64,11 +64,10 @@ var GoogleAnalyticsTracker = /** @class */ (function () {
         });
     };
     GoogleAnalyticsTracker.load = function () {
-        var _this = this;
         return new Promise(function (resolve, reject) {
             if (!window["GoogleAnalyticsObject"]) {
                 var script = document.createElement("script");
-                script.src = _this.analyticsUrl;
+                script.src = GoogleAnalyticsTracker.analyticsUrl;
                 script.onload = function () {
                     resolve();
                 };
