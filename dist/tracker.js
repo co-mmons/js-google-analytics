@@ -35,39 +35,124 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 var trackers = {};
+var offlineStorageKey = "googleAnalytics.offlineHits";
 var GoogleAnalyticsTracker = (function () {
     function GoogleAnalyticsTracker(id, fields) {
         this.tracker = ga.create(id, fields);
-        this.tracker.set("customTask", offlineTracking);
+        this.tracker.set(fields);
+        this.tracker.set("sendHitTask", function (model) { return GoogleAnalyticsTracker.sendHitTask(model); });
     }
     /**
-     * Creates new tracker instance for given id/name.
-     * @param id Tracking id (UA-XXXXX-Y).
-     *
-     * @see Tracking id docs: https://developers.google.com/analytics/devguides/collection/analyticsjs/field-reference#trackingId.
+     * Starts sending hits in batch mode. In order to send hits you have to
+     * either call endBatch() or flushBatch().
      */
-    GoogleAnalyticsTracker.tracker = function (id, fields) {
-        return __awaiter(this, void 0, void 0, function () {
-            var instance;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, GoogleAnalyticsTracker.load()];
-                    case 1:
-                        _a.sent();
-                        instance = trackers[name || id];
-                        if (instance) {
-                            return [2 /*return*/, instance];
-                        }
-                        return [2 /*return*/, trackers[name || id] = new GoogleAnalyticsTracker(id, Object.assign({}, { name: id }, fields))];
+    GoogleAnalyticsTracker.startBatch = function () {
+        if (!this.batchQueue) {
+            this.batchQueue = [];
+        }
+    };
+    /**
+     * Send hits, that are waiting in batch queue. Batch queue is cleared but
+     * batch mode is still enabled.
+     */
+    GoogleAnalyticsTracker.flushBatch = function () {
+        if (this.batchQueue) {
+            this.sendHits(this.batchQueue);
+            this.batchQueue = [];
+        }
+    };
+    /**
+     * Send hits, that are waiting in batch queue and disables batch mode.
+     */
+    GoogleAnalyticsTracker.endBatch = function () {
+        if (this.batchQueue) {
+            this.sendHits(this.batchQueue);
+            this.batchQueue = undefined;
+        }
+    };
+    /**
+     * Implementation of GA sentHitTask. If batch mode is enabled, task is added to
+     * batch queue.
+     */
+    GoogleAnalyticsTracker.sendHitTask = function (model) {
+        if (this.batchQueue) {
+            this.batchQueue.push(model.get("hitPayload"));
+        }
+        else {
+            this.sendHits([model.get("hitPayload")]);
+        }
+    };
+    GoogleAnalyticsTracker.sendHits = function (hits) {
+        var _this = this;
+        var now = Date.now();
+        var allHits = this.pullOfflineHits();
+        for (var _i = 0, hits_1 = hits; _i < hits_1.length; _i++) {
+            var h = hits_1[_i];
+            if (h.indexOf("&tmpts=") < 0) {
+                h += "&tmpts=" + now;
+            }
+            allHits.push(h);
+        }
+        var chunkedHits = this.chunkArray(allHits, 10);
+        var sendingChunk = 0;
+        var sendBatch = function (batchHits) {
+            var http = new XMLHttpRequest();
+            http.open("POST", "https://www.google-analytics.com/batch", true);
+            http.onreadystatechange = function () {
+                if (http.readyState === http.DONE) {
+                    if (http.status !== 200) {
+                        _this.pushOfflineHits(batchHits);
+                    }
+                    if (chunkedHits.length - 1 > sendingChunk) {
+                        sendingChunk++;
+                        sendBatch(chunkedHits[sendingChunk]);
+                    }
                 }
-            });
-        });
+            };
+            var httpPayload = [];
+            for (var _i = 0, batchHits_1 = batchHits; _i < batchHits_1.length; _i++) {
+                var h = batchHits_1[_i];
+                if (h.indexOf("&tmpts=") > -1) {
+                    var t = Math.round(now - parseInt(h.match(/tmpts=([^&]*)/)[1]));
+                    h = h.replace(/tmpts=([^&]*)/, t > 0 ? "qt=" + t : "");
+                    if (t > 10000) {
+                        h += "&cm1=" + Math.round(t / 1000);
+                    }
+                    httpPayload.push(h);
+                }
+                else {
+                    httpPayload.push(h);
+                }
+            }
+            http.send(httpPayload.join("\n"));
+        };
+        sendBatch(chunkedHits[0]);
+    };
+    GoogleAnalyticsTracker.pushOfflineHits = function (hits) {
+        var offline = JSON.parse(window.localStorage.getItem(offlineStorageKey) || "[]");
+        offline = offline.concat(hits);
+        window.localStorage.setItem(offlineStorageKey, JSON.stringify(offline));
+    };
+    GoogleAnalyticsTracker.pullOfflineHits = function () {
+        var hits = JSON.parse(window.localStorage.getItem(offlineStorageKey) || "[]");
+        window.localStorage.removeItem(offlineStorageKey);
+        return hits;
+    };
+    GoogleAnalyticsTracker.chunkArray = function (arr, len) {
+        var chunks = [];
+        var i = 0;
+        var n = arr.length;
+        while (i < n) {
+            chunks.push(arr.slice(i, i += len));
+        }
+        return chunks;
     };
     GoogleAnalyticsTracker.load = function () {
+        var _this = this;
         return new Promise(function (resolve, reject) {
             if (!window["GoogleAnalyticsObject"]) {
                 var script = document.createElement("script");
-                script.src = GoogleAnalyticsTracker.analyticsUrl;
+                script.src = _this.analyticsUrl;
                 script.onload = function () {
                     resolve();
                 };
@@ -79,83 +164,42 @@ var GoogleAnalyticsTracker = (function () {
             }
         });
     };
-    GoogleAnalyticsTracker.prototype.send = function (hitType) {
-        var fields = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            fields[_i - 1] = arguments[_i];
+    /**
+     * Creates new tracker instance for given id/name.
+     *
+     * @param id Tracking id (UA-XXXXX-Y).
+     * @see Tracking id docs: https://developers.google.com/analytics/devguides/collection/analyticsjs/field-reference#trackingId.
+     */
+    GoogleAnalyticsTracker.newTracker = function (id, fields) {
+        return __awaiter(this, void 0, void 0, function () {
+            var instanceId;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.load()];
+                    case 1:
+                        _a.sent();
+                        instanceId = (fields && fields.name) || id;
+                        if (trackers[instanceId]) {
+                            throw new Error("Tracker " + instanceId + " already exists");
+                        }
+                        return [2 /*return*/, trackers[instanceId] = new GoogleAnalyticsTracker(id, Object.assign({}, { name: id }, fields))];
+                }
+            });
+        });
+    };
+    GoogleAnalyticsTracker.getTracker = function (id, name) {
+        var tracker = trackers[name || id];
+        if (!tracker) {
+            throw new Error("Tracker " + (name || id) + " not exists");
         }
+        return tracker;
+    };
+    GoogleAnalyticsTracker.prototype.send = function (hitType, fields) {
         this.tracker.send(hitType, fields);
+        return this;
     };
     GoogleAnalyticsTracker.analyticsUrl = "https://www.google-analytics.com/analytics.js";
     return GoogleAnalyticsTracker;
 }());
 export { GoogleAnalyticsTracker };
-function offlineTracking(customTaskModel) {
-    var sendHitTask = customTaskModel.get("sendHitTask");
-    customTaskModel.set("sendHitTask", function (model) {
-        // let's send the original hit using the native functionality
-        sendHitTask(model);
-        // grab the hit Payload
-        var payload = model.get("hitPayload");
-        // check if GA endpoint is ready
-        var http = new XMLHttpRequest();
-        http.open("HEAD", "https://www.google-analytics.com/collect");
-        http.onreadystatechange = function () {
-            // google analytics endpoint is not reachable, let's save the hit
-            if (this.readyState === this.DONE && this.status !== 200) {
-                pushOfflineHit(payload + "&qt;=" + Date.now());
-            }
-            else {
-                sendOfflineHits();
-            }
-        };
-        http.send();
-    });
-}
-function sendOfflineHits() {
-    if (countOfflineHits()) {
-        // process hits in queue
-        var now = Date.now() / 1000;
-        // let's loop thru the chunks array and send the hits to GA
-        for (var _i = 0, _a = offlineHits(); _i < _a.length; _i++) {
-            var hits = _a[_i];
-            var xhr = new XMLHttpRequest();
-            xhr.open("POST", "https://www.google-analytics.com/batch", true);
-            var payload = [];
-            for (var _b = 0, hits_1 = hits; _b < hits_1.length; _b++) {
-                var hit = hits_1[_b];
-                if (hit.indexOf("&qt;=") > -1) {
-                    payload.push(hit.replace(/qt=([^&]*)/, "qt=" + Math.round(now - parseInt(hit.match(/qt=([^&]*)/)[1]) / 1000) * 1000));
-                }
-                else {
-                    payload.push(hit);
-                }
-            }
-            xhr.onload = function () {
-                clearOfflineHits();
-            };
-            xhr.send(payload.join("\n"));
-        }
-    }
-}
-function pushOfflineHit(hit) {
-}
-function countOfflineHits() {
-    return 0;
-}
-// batch endpoint only allows 20 hits per batch, let's chunk the hits array
-function offlineHits() {
-    return [];
-}
-function clearOfflineHits() {
-}
-function chunkArray(arr, len) {
-    var chunks = [];
-    var i = 0;
-    var n = arr.length;
-    while (i < n) {
-        chunks.push(arr.slice(i, i += len));
-    }
-    return chunks;
-}
 //# sourceMappingURL=tracker.js.map

@@ -2,27 +2,147 @@
 
 const trackers: {[trackerName: string]: GoogleAnalyticsTracker} = {};
 
-export type HitType = "pageview" | "screenview" | "event" | "transaction" | "item" | "social" | "exception" | "timing";
+const offlineStorageKey = "googleAnalytics.offlineHits";
+
+export type GoogleAnalyticsHitType = "pageview" | "screenview" | "event" | "transaction" | "item" | "social" | "exception" | "timing";
 
 export class GoogleAnalyticsTracker {
 
     static analyticsUrl = "https://www.google-analytics.com/analytics.js";
 
     /**
-     * Creates new tracker instance for given id/name.
-     * @param id Tracking id (UA-XXXXX-Y). 
-     * 
-     * @see Tracking id docs: https://developers.google.com/analytics/devguides/collection/analyticsjs/field-reference#trackingId.
+     * List of hits, that are to be sent in batch session. 
+     * When undefined, batch is disabled.
      */
-    static async tracker(id: string, fields?: UniversalAnalytics.FieldsObject): Promise<GoogleAnalyticsTracker> {
-        await GoogleAnalyticsTracker.load();
+    private static batchQueue: string[];
 
-        let instance = trackers[name || id];
-        if (instance) {
-            return instance;
+    /**
+     * Starts sending hits in batch mode. In order to send hits you have to 
+     * either call endBatch() or flushBatch().
+     */
+    public static startBatch() {
+        if (!this.batchQueue) {
+            this.batchQueue = [];
+        }
+    }
+    
+    /**
+     * Send hits, that are waiting in batch queue. Batch queue is cleared but
+     * batch mode is still enabled.
+     */
+    public static flushBatch() {
+        if (this.batchQueue) {
+            this.sendHits(this.batchQueue);
+            this.batchQueue = [];
+        }
+    }
+
+    /**
+     * Send hits, that are waiting in batch queue and disables batch mode.
+     */
+    public static endBatch() {
+        if (this.batchQueue) {
+            this.sendHits(this.batchQueue);
+            this.batchQueue = undefined;
+        }
+    }
+
+
+    /**
+     * Implementation of GA sentHitTask. If batch mode is enabled, task is added to 
+     * batch queue.
+     */
+    private static sendHitTask(model: UniversalAnalytics.Model) {
+        if (this.batchQueue) {
+            this.batchQueue.push(model.get("hitPayload"));
+        } else {
+            this.sendHits([model.get("hitPayload")]);
+        }
+    }
+
+    private static sendHits(hits?: string[]) {
+
+        let now = Date.now();
+
+        let allHits = this.pullOfflineHits();
+        for (let h of hits) {
+
+            if (h.indexOf("&tmpts=") < 0) {
+                h += "&tmpts=" + now;
+            }
+
+            allHits.push(h);
         }
 
-        return trackers[name || id] = new GoogleAnalyticsTracker(id, Object.assign({}, {name: id}, fields));
+        let chunkedHits = this.chunkArray(allHits, 10);
+        let sendingChunk = 0;
+
+        let sendBatch = (batchHits: string[]) => {
+
+            let http = new XMLHttpRequest();
+            http.open("POST", "https://www.google-analytics.com/batch", true);
+
+            http.onreadystatechange = () => {
+
+                if (http.readyState === http.DONE) {
+
+                    if (http.status !== 200) {
+                        this.pushOfflineHits(batchHits);
+                    }
+
+                    if (chunkedHits.length - 1 > sendingChunk) {
+                        sendingChunk++;
+                        sendBatch(chunkedHits[sendingChunk]);
+                    }
+                }
+            };
+
+            let httpPayload: string[] = [];
+
+            for (let h of batchHits) {
+                if (h.indexOf("&tmpts=") > -1) {
+                    let t = Math.round(now - parseInt(h.match(/tmpts=([^&]*)/)[1]));
+                    h = h.replace(/tmpts=([^&]*)/, t > 0 ? "qt=" + t : "");
+                    if (t > 10000) {
+                        h += "&cm1=" + Math.round(t / 1000);
+                    }
+                    httpPayload.push(h);
+                } else {
+                    httpPayload.push(h);
+                }
+            }
+
+            http.send(httpPayload.join("\n"));
+        };
+
+        sendBatch(chunkedHits[0]);
+    }
+
+    private static pushOfflineHits(hits: string[]) {
+
+        let offline: string[] = JSON.parse(window.localStorage.getItem(offlineStorageKey) || "[]");
+        offline = offline.concat(hits);
+
+        window.localStorage.setItem(offlineStorageKey, JSON.stringify(offline));
+    }
+
+    private static pullOfflineHits(): string[] {
+        let hits = JSON.parse(window.localStorage.getItem(offlineStorageKey) || "[]");
+        window.localStorage.removeItem(offlineStorageKey);
+        return hits;
+    }
+
+    private static chunkArray(arr: any[], len: number) {
+
+        let chunks = [];
+        let i = 0;
+        let n = arr.length;
+
+        while (i < n) {
+            chunks.push(arr.slice(i, i += len));
+        }
+
+        return chunks;
     }
 
     private static load(): Promise<void> {
@@ -31,7 +151,7 @@ export class GoogleAnalyticsTracker {
             if (!window["GoogleAnalyticsObject"]) {
 
                 let script: HTMLScriptElement = document.createElement("script");
-                script.src = GoogleAnalyticsTracker.analyticsUrl;
+                script.src = this.analyticsUrl;
                 script.onload = () => {
                     resolve();
                 };
@@ -45,108 +165,46 @@ export class GoogleAnalyticsTracker {
         });
     }
 
+
+    /**
+     * Creates new tracker instance for given id/name.
+     * 
+     * @param id Tracking id (UA-XXXXX-Y). 
+     * @see Tracking id docs: https://developers.google.com/analytics/devguides/collection/analyticsjs/field-reference#trackingId.
+     */
+    static async newTracker(id: string, fields?: UniversalAnalytics.FieldsObject): Promise<GoogleAnalyticsTracker> {
+        await this.load();
+
+        let instanceId = (fields && fields.name) || id;
+
+        if (trackers[instanceId]) {
+            throw new Error("Tracker " + instanceId + " already exists");
+        }
+
+        return trackers[instanceId] = new GoogleAnalyticsTracker(id, Object.assign({}, {name: id}, fields));
+    }
+
+    static getTracker(id: string, name?: string) {
+        let tracker = trackers[name || id];
+        
+        if (!tracker) {
+            throw new Error("Tracker " + (name || id) + " not exists");
+        }
+
+        return tracker;
+    }
+
     private constructor(id: string, fields?: UniversalAnalytics.FieldsObject) {
         this.tracker = ga.create(id, fields);
-        this.tracker.set("customTask", offlineTracking);
+        this.tracker.set(fields);
+        this.tracker.set("sendHitTask", (model) => GoogleAnalyticsTracker.sendHitTask(model));
     }
 
-    private readonly tracker: UniversalAnalytics.Tracker;
+    readonly tracker: UniversalAnalytics.Tracker;
 
-    send(hitType: HitType, fieldsObject: {}): void;
-
-    send(hitType: HitType, ...fields: any[]): void {
+    send(hitType: GoogleAnalyticsHitType, fields: {}): this {
         this.tracker.send(hitType, fields);
+        return this;
     }
 
-}
-
-function offlineTracking(customTaskModel: UniversalAnalytics.Model) {
-
-    let sendHitTask: Function = customTaskModel.get("sendHitTask");
-
-    customTaskModel.set("sendHitTask", function(model: UniversalAnalytics.Model) {
-
-        // let's send the original hit using the native functionality
-        sendHitTask(model);
-
-        // grab the hit Payload
-        let payload = model.get("hitPayload");
-
-        // check if GA endpoint is ready
-        let http = new XMLHttpRequest();
-        http.open("HEAD", "https://www.google-analytics.com/collect");
-
-        http.onreadystatechange = function() {
-
-            // google analytics endpoint is not reachable, let's save the hit
-            if (this.readyState === this.DONE && this.status !== 200) {
-                pushOfflineHit(payload + "&qt;=" + Date.now());
-
-            } else {
-                sendOfflineHits();
-            }
-        };
-        http.send();
-    });
-}
-
-function sendOfflineHits() {
-
-    if (countOfflineHits()) {
-
-        // process hits in queue
-        let now = Date.now() / 1000;
-
-        // let's loop thru the chunks array and send the hits to GA
-        for (let hits of offlineHits()) {
-
-            let xhr = new XMLHttpRequest();
-            xhr.open("POST", "https://www.google-analytics.com/batch", true);
-
-            let payload: string[] = [];
-            for (let hit of hits) {
-                if (hit.indexOf("&qt;=") > -1) {
-                    payload.push(hit.replace(/qt=([^&]*)/, "qt=" + Math.round(now - parseInt(hit.match(/qt=([^&]*)/)[1]) / 1000) * 1000));
-                } else {
-                    payload.push(hit);
-                }
-            }
-
-            xhr.onload = () => {
-                clearOfflineHits();
-            }
-
-            xhr.send(payload.join("\n"));
-        }
-    }
-    
-}
-
-function pushOfflineHit(hit: string) {
-}
-
-function countOfflineHits(): number {
-    return 0;
-}
-
-// batch endpoint only allows 20 hits per batch, let's chunk the hits array
-function offlineHits(): string[][] {
-    return [];
-}
-
-function clearOfflineHits() {
-
-}
-
-function chunkArray(arr: any[], len: number) {
-
-    let chunks = [];
-    let i = 0;
-    let n = arr.length;
-
-    while (i < n) {
-        chunks.push(arr.slice(i, i += len));
-    }
-
-    return chunks;
 }
