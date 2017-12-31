@@ -1,4 +1,3 @@
-//https://www.simoahava.com/analytics/track-users-who-are-offline-in-google-analytics
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -34,171 +33,38 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var trackers = {};
-var offlineStorageKey = "googleAnalytics.offlineHits";
-var GoogleAnalyticsTracker = (function () {
-    function GoogleAnalyticsTracker(id, fields) {
+import { GoogleAnalyticsService } from "./service";
+var GoogleAnalyticsTracker = /** @class */ (function () {
+    function GoogleAnalyticsTracker(service, id, fields) {
+        this.service = service;
         this.tracker = ga.create(id, fields);
         this.tracker.set(fields);
-        this.tracker.set("sendHitTask", function (model) { return GoogleAnalyticsTracker.sendHitTask(model); });
+        this.tracker.set("sendHitTask", function (model) { return service.sendHitTask(model); });
     }
-    /**
-     * Starts sending hits in batch mode. In order to send hits you have to
-     * either call endBatch() or flushBatch().
-     */
-    GoogleAnalyticsTracker.startBatch = function () {
-        if (!this.batchQueue) {
-            this.batchQueue = [];
-        }
-    };
-    /**
-     * Send hits, that are waiting in batch queue. Batch queue is cleared but
-     * batch mode is still enabled.
-     */
-    GoogleAnalyticsTracker.flushBatch = function () {
-        if (this.batchQueue) {
-            this.sendHits(this.batchQueue);
-            this.batchQueue = [];
-        }
-    };
-    /**
-     * Send hits, that are waiting in batch queue and disables batch mode.
-     */
-    GoogleAnalyticsTracker.endBatch = function () {
-        if (this.batchQueue) {
-            this.sendHits(this.batchQueue);
-            this.batchQueue = undefined;
-        }
-    };
-    /**
-     * Implementation of GA sentHitTask. If batch mode is enabled, task is added to
-     * batch queue.
-     */
-    GoogleAnalyticsTracker.sendHitTask = function (model) {
-        if (this.batchQueue) {
-            this.batchQueue.push(model.get("hitPayload"));
-        }
-        else {
-            this.sendHits([model.get("hitPayload")]);
-        }
-    };
-    GoogleAnalyticsTracker.sendHits = function (hits) {
-        var _this = this;
-        var now = Date.now();
-        var allHits = this.pullOfflineHits();
-        for (var _i = 0, hits_1 = hits; _i < hits_1.length; _i++) {
-            var h = hits_1[_i];
-            if (h.indexOf("&tmpts=") < 0) {
-                h += "&tmpts=" + now;
-            }
-            allHits.push(h);
-        }
-        var chunkedHits = this.chunkArray(allHits, 10);
-        var sendingChunk = 0;
-        var sendBatch = function (batchHits) {
-            var http = new XMLHttpRequest();
-            http.open("POST", "https://www.google-analytics.com/batch", true);
-            http.onreadystatechange = function () {
-                if (http.readyState === http.DONE) {
-                    if (http.status !== 200) {
-                        _this.pushOfflineHits(batchHits);
-                    }
-                    if (chunkedHits.length - 1 > sendingChunk) {
-                        sendingChunk++;
-                        sendBatch(chunkedHits[sendingChunk]);
-                    }
-                }
-            };
-            var httpPayload = [];
-            for (var _i = 0, batchHits_1 = batchHits; _i < batchHits_1.length; _i++) {
-                var h = batchHits_1[_i];
-                if (h.indexOf("&tmpts=") > -1) {
-                    var t = Math.round(now - parseInt(h.match(/tmpts=([^&]*)/)[1]));
-                    h = h.replace(/tmpts=([^&]*)/, t > 0 ? "qt=" + t : "");
-                    if (t > 10000) {
-                        h += "&cm1=" + Math.round(t / 1000);
-                    }
-                    httpPayload.push(h);
-                }
-                else {
-                    httpPayload.push(h);
-                }
-            }
-            http.send(httpPayload.join("\n"));
-        };
-        sendBatch(chunkedHits[0]);
-    };
-    GoogleAnalyticsTracker.pushOfflineHits = function (hits) {
-        var offline = JSON.parse(window.localStorage.getItem(offlineStorageKey) || "[]");
-        offline = offline.concat(hits);
-        window.localStorage.setItem(offlineStorageKey, JSON.stringify(offline));
-    };
-    GoogleAnalyticsTracker.pullOfflineHits = function () {
-        var hits = JSON.parse(window.localStorage.getItem(offlineStorageKey) || "[]");
-        window.localStorage.removeItem(offlineStorageKey);
-        return hits;
-    };
-    GoogleAnalyticsTracker.chunkArray = function (arr, len) {
-        var chunks = [];
-        var i = 0;
-        var n = arr.length;
-        while (i < n) {
-            chunks.push(arr.slice(i, i += len));
-        }
-        return chunks;
-    };
-    GoogleAnalyticsTracker.load = function () {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            if (!window["GoogleAnalyticsObject"]) {
-                var script = document.createElement("script");
-                script.src = _this.analyticsUrl;
-                script.onload = function () {
-                    resolve();
-                };
-                var sibling = document.getElementsByTagName("script")[0];
-                sibling.parentNode.insertBefore(script, sibling);
-            }
-            else {
-                resolve();
-            }
-        });
-    };
     /**
      * Creates new tracker instance for given id/name.
      *
      * @param id Tracking id (UA-XXXXX-Y).
-     * @see Tracking id docs: https://developers.google.com/analytics/devguides/collection/analyticsjs/field-reference#trackingId.
+     * @param fields Tracking settings.
+     * @see Tracking id docs: https://developers.google.com/analytics/devguides/collection/analyticsjs/field-reference.
      */
-    GoogleAnalyticsTracker.newTracker = function (id, fields) {
+    GoogleAnalyticsTracker.newTracker = function (id, fields, service) {
         return __awaiter(this, void 0, void 0, function () {
-            var instanceId;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.load()];
-                    case 1:
-                        _a.sent();
-                        instanceId = (fields && fields.name) || id;
-                        if (trackers[instanceId]) {
-                            throw new Error("Tracker " + instanceId + " already exists");
-                        }
-                        return [2 /*return*/, trackers[instanceId] = new GoogleAnalyticsTracker(id, Object.assign({}, { name: id }, fields))];
+                if (!service) {
+                    service = new GoogleAnalyticsService();
                 }
+                return [2 /*return*/, new GoogleAnalyticsTracker(service, id, fields)];
             });
         });
-    };
-    GoogleAnalyticsTracker.getTracker = function (id, name) {
-        var tracker = trackers[name || id];
-        if (!tracker) {
-            throw new Error("Tracker " + (name || id) + " not exists");
-        }
-        return tracker;
     };
     GoogleAnalyticsTracker.prototype.send = function (hitType, fields) {
         this.tracker.send(hitType, fields);
         return this;
     };
-    GoogleAnalyticsTracker.analyticsUrl = "https://www.google-analytics.com/analytics.js";
+    GoogleAnalyticsTracker.prototype.flush = function () {
+        this.service.flushBatch();
+    };
     return GoogleAnalyticsTracker;
 }());
 export { GoogleAnalyticsTracker };
