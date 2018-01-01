@@ -36,4 +36,12 @@ export class GoogleAnalyticsTracker {
         this.service.flushBatch();
     }
 
+    get(fieldName: string): any {
+        return this.tracker.get(fieldName);
+    }
+
+    set(fieldName: string, fieldValue: any) {
+        this.tracker.set(fieldName, fieldValue);
+    }
+
 }

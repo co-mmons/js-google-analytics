@@ -15,4 +15,6 @@ export declare class GoogleAnalyticsTracker {
     private readonly tracker;
     send(hitType: GoogleAnalyticsHitType, fields: {}): this;
     flush(): void;
+    get(fieldName: string): any;
+    set(fieldName: string, fieldValue: any): void;
 }

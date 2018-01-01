@@ -65,6 +65,12 @@ var GoogleAnalyticsTracker = /** @class */ (function () {
     GoogleAnalyticsTracker.prototype.flush = function () {
         this.service.flushBatch();
     };
+    GoogleAnalyticsTracker.prototype.get = function (fieldName) {
+        return this.tracker.get(fieldName);
+    };
+    GoogleAnalyticsTracker.prototype.set = function (fieldName, fieldValue) {
+        this.tracker.set(fieldName, fieldValue);
+    };
     return GoogleAnalyticsTracker;
 }());
 export { GoogleAnalyticsTracker };
