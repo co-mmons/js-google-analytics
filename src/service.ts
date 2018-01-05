@@ -54,6 +54,8 @@ export class GoogleAnalyticsService {
      */
     public flushBatch() {
         if (this.batchQueue) {
+            // console.log("batch queue");
+            // console.log(this.batchQueue);
             this.sendHits(this.batchQueue);
             this.batchQueue = [];
         }
@@ -75,6 +77,8 @@ export class GoogleAnalyticsService {
      * batch queue.
      */
     sendHitTask(model: UniversalAnalytics.Model) {
+        // console.log("send hit task");
+        // console.log(model.get("hitPayload"));
         if (this.batchQueue) {
             this.batchQueue.push(model.get("hitPayload"));
         } else {
@@ -100,6 +104,8 @@ export class GoogleAnalyticsService {
         let sendingChunk = 0;
 
         let sendBatch = (batchHits: string[]) => {
+            // console.log("send batch");
+            // console.log(batchHits);
 
             let http = new XMLHttpRequest();
             http.open("POST", "https://www.google-analytics.com/batch", true);
@@ -168,6 +174,10 @@ export class GoogleAnalyticsService {
     }
 
 
+    private static trackerName(id: string) {
+        return id.replace(/\-/g, "");
+    }
+
     /**
      * Creates new tracker instance for given id/name.
      * 
@@ -177,13 +187,13 @@ export class GoogleAnalyticsService {
     async newTracker(id: string, fields?: UniversalAnalytics.FieldsObject): Promise<GoogleAnalyticsTracker> {
         await GoogleAnalyticsService.load();
 
-        let instanceId = (fields && fields.name) || id;
+        let instanceId = (fields && fields.name) || GoogleAnalyticsService.trackerName(id);
 
         if (this.trackers[instanceId]) {
             throw new Error("Tracker " + instanceId + " already exists");
         }
 
-        return this.trackers[instanceId] = (await GoogleAnalyticsTracker.newTracker(id, Object.assign({}, {name: id}, fields), this));
+        return this.trackers[instanceId] = (await GoogleAnalyticsTracker.newTracker(id, Object.assign({}, {name: GoogleAnalyticsService.trackerName(id)}, fields), this));
     }
 
     public getTracker(id: string, name?: string) {

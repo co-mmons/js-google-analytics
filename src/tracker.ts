@@ -20,14 +20,17 @@ export class GoogleAnalyticsTracker {
     }
 
     constructor(public readonly service: GoogleAnalyticsService, id: string, fields?: UniversalAnalytics.FieldsObject) {
-        this.tracker = ga.create(id, fields);
+        this.tracker = ga.create(id, Object.assign({}, fields, {cookieDomain: window.location.protocol.indexOf("file") > -1 ? "none" : "auto"}));
         this.tracker.set(fields);
+        this.tracker.set("checkProtocolTask", () => null);
         this.tracker.set("sendHitTask", (model) => service.sendHitTask(model));
     }
 
     private readonly tracker: UniversalAnalytics.Tracker;
 
     send(hitType: GoogleAnalyticsHitType, fields: {}): this {
+        // console.log("send " + hitType);
+        // console.log(this.tracker);
         this.tracker.send(hitType, fields);
         return this;
     }

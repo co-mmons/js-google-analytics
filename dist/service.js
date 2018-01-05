@@ -72,6 +72,8 @@ var GoogleAnalyticsService = /** @class */ (function () {
      */
     GoogleAnalyticsService.prototype.flushBatch = function () {
         if (this.batchQueue) {
+            // console.log("batch queue");
+            // console.log(this.batchQueue);
             this.sendHits(this.batchQueue);
             this.batchQueue = [];
         }
@@ -90,6 +92,8 @@ var GoogleAnalyticsService = /** @class */ (function () {
      * batch queue.
      */
     GoogleAnalyticsService.prototype.sendHitTask = function (model) {
+        // console.log("send hit task");
+        // console.log(model.get("hitPayload"));
         if (this.batchQueue) {
             this.batchQueue.push(model.get("hitPayload"));
         }
@@ -111,6 +115,8 @@ var GoogleAnalyticsService = /** @class */ (function () {
         var chunkedHits = this.chunkArray(allHits, 10);
         var sendingChunk = 0;
         var sendBatch = function (batchHits) {
+            // console.log("send batch");
+            // console.log(batchHits);
             var http = new XMLHttpRequest();
             http.open("POST", "https://www.google-analytics.com/batch", true);
             http.onreadystatechange = function () {
@@ -162,6 +168,9 @@ var GoogleAnalyticsService = /** @class */ (function () {
         }
         return chunks;
     };
+    GoogleAnalyticsService.trackerName = function (id) {
+        return id.replace(/\-/g, "");
+    };
     /**
      * Creates new tracker instance for given id/name.
      *
@@ -176,13 +185,13 @@ var GoogleAnalyticsService = /** @class */ (function () {
                     case 0: return [4 /*yield*/, GoogleAnalyticsService.load()];
                     case 1:
                         _c.sent();
-                        instanceId = (fields && fields.name) || id;
+                        instanceId = (fields && fields.name) || GoogleAnalyticsService.trackerName(id);
                         if (this.trackers[instanceId]) {
                             throw new Error("Tracker " + instanceId + " already exists");
                         }
                         _a = this.trackers;
                         _b = instanceId;
-                        return [4 /*yield*/, GoogleAnalyticsTracker.newTracker(id, Object.assign({}, { name: id }, fields), this)];
+                        return [4 /*yield*/, GoogleAnalyticsTracker.newTracker(id, Object.assign({}, { name: GoogleAnalyticsService.trackerName(id) }, fields), this)];
                     case 2: return [2 /*return*/, _a[_b] = (_c.sent())];
                 }
             });
@@ -195,7 +204,7 @@ var GoogleAnalyticsService = /** @class */ (function () {
         }
         return tracker;
     };
-    GoogleAnalyticsService.analyticsUrl = "https://www.google-analytics.com/analytics.js";
+    GoogleAnalyticsService.analyticsUrl = "https://www.google-analytics.com/analytics_debug.js";
     return GoogleAnalyticsService;
 }());
 export { GoogleAnalyticsService };

@@ -37,8 +37,9 @@ import { GoogleAnalyticsService } from "./service";
 var GoogleAnalyticsTracker = /** @class */ (function () {
     function GoogleAnalyticsTracker(service, id, fields) {
         this.service = service;
-        this.tracker = ga.create(id, fields);
+        this.tracker = ga.create(id, Object.assign({}, fields, { cookieDomain: window.location.protocol.indexOf("file") > -1 ? "none" : "auto" }));
         this.tracker.set(fields);
+        this.tracker.set("checkProtocolTask", function () { return null; });
         this.tracker.set("sendHitTask", function (model) { return service.sendHitTask(model); });
     }
     /**
@@ -59,6 +60,8 @@ var GoogleAnalyticsTracker = /** @class */ (function () {
         });
     };
     GoogleAnalyticsTracker.prototype.send = function (hitType, fields) {
+        // console.log("send " + hitType);
+        // console.log(this.tracker);
         this.tracker.send(hitType, fields);
         return this;
     };

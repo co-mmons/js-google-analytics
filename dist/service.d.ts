@@ -32,6 +32,7 @@ export declare class GoogleAnalyticsService {
     private pushOfflineHits(hits);
     private pullOfflineHits();
     private chunkArray(arr, len);
+    private static trackerName(id);
     /**
      * Creates new tracker instance for given id/name.
      *
