@@ -43,7 +43,7 @@ var GoogleAnalyticsService = /** @class */ (function () {
     GoogleAnalyticsService.load = function () {
         var _this = this;
         return new Promise(function (resolve, reject) {
-            if (!window["GoogleAnalyticsObject"]) {
+            if (!window["ga"]) {
                 var script = document.createElement("script");
                 script.src = _this.analyticsUrl;
                 script.onload = function () {
@@ -125,8 +125,7 @@ var GoogleAnalyticsService = /** @class */ (function () {
                         _this.pushOfflineHits(batchHits);
                     }
                     if (chunkedHits.length - 1 > sendingChunk) {
-                        sendingChunk++;
-                        sendBatch(chunkedHits[sendingChunk]);
+                        sendBatch(chunkedHits[++sendingChunk]);
                     }
                 }
             };
@@ -204,7 +203,7 @@ var GoogleAnalyticsService = /** @class */ (function () {
         }
         return tracker;
     };
-    GoogleAnalyticsService.analyticsUrl = "https://www.google-analytics.com/analytics_debug.js";
+    GoogleAnalyticsService.analyticsUrl = "https://www.google-analytics.com/analytics.js";
     return GoogleAnalyticsService;
 }());
 export { GoogleAnalyticsService };

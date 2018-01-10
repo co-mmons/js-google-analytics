@@ -12,7 +12,7 @@ export class GoogleAnalyticsService {
     static load(): Promise<void> {
 
         return new Promise((resolve, reject) => {
-            if (!window["GoogleAnalyticsObject"]) {
+            if (!window["ga"]) {
 
                 let script: HTMLScriptElement = document.createElement("script");
                 script.src = this.analyticsUrl;
@@ -119,8 +119,7 @@ export class GoogleAnalyticsService {
                     }
 
                     if (chunkedHits.length - 1 > sendingChunk) {
-                        sendingChunk++;
-                        sendBatch(chunkedHits[sendingChunk]);
+                        sendBatch(chunkedHits[++sendingChunk]);
                     }
                 }
             };
