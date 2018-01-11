@@ -130,8 +130,8 @@ var GoogleAnalyticsService = /** @class */ (function () {
                 }
             };
             var httpPayload = [];
-            for (var _i = 0, batchHits_1 = batchHits; _i < batchHits_1.length; _i++) {
-                var h = batchHits_1[_i];
+            for (var _i = 0, _a = (batchHits || []); _i < _a.length; _i++) {
+                var h = _a[_i];
                 if (h.indexOf("&tmpts=") > -1) {
                     var t = Math.round(now - parseInt(h.match(/tmpts=([^&]*)/)[1]));
                     h = h.replace(/tmpts=([^&]*)/, t > 0 ? "qt=" + t : "");

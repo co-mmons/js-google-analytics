@@ -126,7 +126,7 @@ export class GoogleAnalyticsService {
 
             let httpPayload: string[] = [];
 
-            for (let h of batchHits) {
+            for (let h of (batchHits || [])) {
                 if (h.indexOf("&tmpts=") > -1) {
                     let t = Math.round(now - parseInt(h.match(/tmpts=([^&]*)/)[1]));
                     h = h.replace(/tmpts=([^&]*)/, t > 0 ? "qt=" + t : "");
