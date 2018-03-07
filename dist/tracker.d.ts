@@ -12,7 +12,10 @@ export declare class GoogleAnalyticsTracker {
      */
     static newTracker(id: string, fields?: UniversalAnalytics.FieldsObject, service?: GoogleAnalyticsService): Promise<GoogleAnalyticsTracker>;
     constructor(service: GoogleAnalyticsService, id: string, fields?: UniversalAnalytics.FieldsObject);
+    readonly name: string;
     private readonly tracker;
+    pluginRequire(plugin: string): void;
+    pluginCall(plugin: string, method: string, callArgs?: any): void;
     send(hitType: GoogleAnalyticsHitType, fields: {}): this;
     flush(): void;
     get(fieldName: string): any;

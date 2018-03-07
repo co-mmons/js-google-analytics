@@ -41,6 +41,7 @@ var GoogleAnalyticsTracker = /** @class */ (function () {
         this.tracker.set(fields);
         this.tracker.set("checkProtocolTask", function () { return null; });
         this.tracker.set("sendHitTask", function (model) { return service.sendHitTask(model); });
+        this.name = fields.name;
     }
     /**
      * Creates new tracker instance for given id/name.
@@ -58,6 +59,12 @@ var GoogleAnalyticsTracker = /** @class */ (function () {
                 return [2 /*return*/, new GoogleAnalyticsTracker(service, id, fields)];
             });
         });
+    };
+    GoogleAnalyticsTracker.prototype.pluginRequire = function (plugin) {
+        ga(this.name + ".require", plugin);
+    };
+    GoogleAnalyticsTracker.prototype.pluginCall = function (plugin, method, callArgs) {
+        ga(this.name + "." + plugin + ":" + method, callArgs);
     };
     GoogleAnalyticsTracker.prototype.send = function (hitType, fields) {
         // console.log("send " + hitType);

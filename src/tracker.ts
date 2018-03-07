@@ -24,9 +24,21 @@ export class GoogleAnalyticsTracker {
         this.tracker.set(fields);
         this.tracker.set("checkProtocolTask", () => null);
         this.tracker.set("sendHitTask", (model) => service.sendHitTask(model));
+
+        this.name = fields.name;
     }
 
+    public readonly name: string;
+
     private readonly tracker: UniversalAnalytics.Tracker;
+
+    pluginRequire(plugin: string) {
+        ga(this.name + ".require", plugin);
+    }
+
+    pluginCall(plugin: string, method: string, callArgs?: any) {
+        ga(this.name + "." + plugin + ":" + method, callArgs);
+    }
 
     send(hitType: GoogleAnalyticsHitType, fields: {}): this {
         // console.log("send " + hitType);
