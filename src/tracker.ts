@@ -24,7 +24,7 @@ export class GoogleAnalyticsTracker {
         fields = Object.assign({}, fields, {cookieDomain: window.location.protocol.indexOf("file") > -1 ? "none" : "auto"});
         
         // cookies disabled
-        if (fields.cookieDomain == "none") {
+        if (fields.cookieDomain == "none" && !navigator.cookieEnabled) {
             fields["storage"] = "none";
 
             if (!fields.clientId && window.localStorage) {
