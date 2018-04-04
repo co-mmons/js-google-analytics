@@ -39,7 +39,7 @@ var GoogleAnalyticsTracker = /** @class */ (function () {
         this.service = service;
         fields = Object.assign({}, fields, { cookieDomain: window.location.protocol.indexOf("file") > -1 ? "none" : "auto" });
         // cookies disabled
-        if (fields.cookieDomain == "none" && !navigator.cookieEnabled) {
+        if (fields.cookieDomain == "none") {
             fields["storage"] = "none";
             if (!fields.clientId && window.localStorage) {
                 fields.clientId = window.localStorage.getItem("ga:clientId");
