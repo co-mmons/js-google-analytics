@@ -20,7 +20,23 @@ export class GoogleAnalyticsTracker {
     }
 
     constructor(public readonly service: GoogleAnalyticsService, id: string, fields?: UniversalAnalytics.FieldsObject) {
-        this.tracker = ga.create(id, Object.assign({}, fields, {cookieDomain: window.location.protocol.indexOf("file") > -1 ? "none" : "auto"}));
+
+        fields = Object.assign({}, fields, {cookieDomain: window.location.protocol.indexOf("file") > -1 ? "none" : "auto"});
+        
+        // cookies disabled
+        if (fields.cookieDomain == "none") {
+            fields["storage"] = "none";
+
+            if (!fields.clientId && window.localStorage) {
+                fields.clientId = window.localStorage.getItem("ga:clientId");
+
+                ga((tracker) => {
+                    window.localStorage.setItem("ga:clientId", tracker.get("clientId"));
+                });
+            }
+        }
+
+        this.tracker = ga.create(id, fields);
         this.tracker.set(fields);
         this.tracker.set("checkProtocolTask", () => null);
         this.tracker.set("sendHitTask", (model) => service.sendHitTask(model));

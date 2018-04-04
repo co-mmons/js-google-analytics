@@ -56,7 +56,8 @@ export class GoogleAnalyticsService {
         if (this.batchQueue) {
             // console.log("batch queue");
             // console.log(this.batchQueue);
-            this.sendHits(this.batchQueue);
+            let q = this.batchQueue.slice();
+            this.sendHits(q);
             this.batchQueue = [];
         }
     }
@@ -66,7 +67,8 @@ export class GoogleAnalyticsService {
      */
     public endBatch() {
         if (this.batchQueue) {
-            this.sendHits(this.batchQueue);
+            let q = this.batchQueue.slice();
+            this.sendHits(q);
             this.batchQueue = undefined;
         }
     }

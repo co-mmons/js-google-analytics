@@ -74,7 +74,8 @@ var GoogleAnalyticsService = /** @class */ (function () {
         if (this.batchQueue) {
             // console.log("batch queue");
             // console.log(this.batchQueue);
-            this.sendHits(this.batchQueue);
+            var q = this.batchQueue.slice();
+            this.sendHits(q);
             this.batchQueue = [];
         }
     };
@@ -83,7 +84,8 @@ var GoogleAnalyticsService = /** @class */ (function () {
      */
     GoogleAnalyticsService.prototype.endBatch = function () {
         if (this.batchQueue) {
-            this.sendHits(this.batchQueue);
+            var q = this.batchQueue.slice();
+            this.sendHits(q);
             this.batchQueue = undefined;
         }
     };
