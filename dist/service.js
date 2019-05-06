@@ -49,6 +49,12 @@ var GoogleAnalyticsService = /** @class */ (function () {
                 script.onload = function () {
                     resolve();
                 };
+                script.onerror = function () {
+                    reject();
+                };
+                script.onabort = function () {
+                    reject();
+                };
                 var sibling = document.getElementsByTagName("script")[0];
                 sibling.parentNode.insertBefore(script, sibling);
             }

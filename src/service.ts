@@ -20,6 +20,14 @@ export class GoogleAnalyticsService {
                     resolve();
                 };
 
+                script.onerror = () => {
+                    reject();
+                };
+
+                script.onabort = () => {
+                    reject();
+                };
+
                 let sibling = document.getElementsByTagName("script")[0];
                 sibling.parentNode.insertBefore(script, sibling);
 
