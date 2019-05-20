@@ -5,7 +5,8 @@
   "private": false,
   "license": "MIT",
   "scripts": {
-    "install": "node-utils-npm-install-dist"
+    "install": "node-utils-npm-install-dist",
+    "build": "tsc"
   },
   "dependencies": {
     "@co.mmons/node-utils": "git+https://github.com/co-mmons/node-utils.git",

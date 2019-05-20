@@ -116,52 +116,57 @@ var GoogleAnalyticsService = /** @class */ (function () {
     };
     GoogleAnalyticsService.prototype.sendHits = function (hits) {
         var _this = this;
-        var now = Date.now();
-        var allHits = this.pullOfflineHits();
-        for (var _i = 0, hits_1 = hits; _i < hits_1.length; _i++) {
-            var h = hits_1[_i];
-            if (h) {
-                if (h.indexOf("&tmpts=") < 0) {
-                    h += "&tmpts=" + now;
+        try {
+            var now_1 = Date.now();
+            var allHits = this.pullOfflineHits();
+            for (var _i = 0, hits_1 = hits; _i < hits_1.length; _i++) {
+                var h = hits_1[_i];
+                if (h) {
+                    if (h.indexOf("&tmpts=") < 0) {
+                        h += "&tmpts=" + now_1;
+                    }
+                    allHits.push(h);
                 }
-                allHits.push(h);
             }
-        }
-        var chunkedHits = this.chunkArray(allHits, 10);
-        var sendingChunk = 0;
-        var sendBatch = function (batchHits) {
-            // console.log("send batch");
-            // console.log(batchHits);
-            var http = new XMLHttpRequest();
-            http.open("POST", "https://www.google-analytics.com/batch", true);
-            http.onreadystatechange = function () {
-                if (http.readyState === http.DONE) {
-                    if (http.status !== 200) {
-                        _this.pushOfflineHits(batchHits);
+            var chunkedHits_1 = this.chunkArray(allHits, 10);
+            var sendingChunk_1 = 0;
+            var sendBatch_1 = function (batchHits) {
+                // console.log("send batch");
+                // console.log(batchHits);
+                var http = new XMLHttpRequest();
+                http.open("POST", "https://www.google-analytics.com/batch", true);
+                http.onreadystatechange = function () {
+                    if (http.readyState === http.DONE) {
+                        if (http.status !== 200) {
+                            _this.pushOfflineHits(batchHits);
+                        }
+                        if (chunkedHits_1.length - 1 > sendingChunk_1) {
+                            sendBatch_1(chunkedHits_1[++sendingChunk_1]);
+                        }
                     }
-                    if (chunkedHits.length - 1 > sendingChunk) {
-                        sendBatch(chunkedHits[++sendingChunk]);
+                };
+                var httpPayload = [];
+                for (var _i = 0, _a = (batchHits || []); _i < _a.length; _i++) {
+                    var h = _a[_i];
+                    if (h.indexOf("&tmpts=") > -1) {
+                        var t = Math.round(now_1 - parseInt(h.match(/tmpts=([^&]*)/)[1]));
+                        h = h.replace(/tmpts=([^&]*)/, t > 0 ? "qt=" + t : "");
+                        if (t > 10000) {
+                            h += "&cm1=" + Math.round(t / 1000);
+                        }
+                        httpPayload.push(h);
+                    }
+                    else {
+                        httpPayload.push(h);
                     }
                 }
+                http.send(httpPayload.join("\n"));
             };
-            var httpPayload = [];
-            for (var _i = 0, _a = (batchHits || []); _i < _a.length; _i++) {
-                var h = _a[_i];
-                if (h.indexOf("&tmpts=") > -1) {
-                    var t = Math.round(now - parseInt(h.match(/tmpts=([^&]*)/)[1]));
-                    h = h.replace(/tmpts=([^&]*)/, t > 0 ? "qt=" + t : "");
-                    if (t > 10000) {
-                        h += "&cm1=" + Math.round(t / 1000);
-                    }
-                    httpPayload.push(h);
-                }
-                else {
-                    httpPayload.push(h);
-                }
-            }
-            http.send(httpPayload.join("\n"));
-        };
-        sendBatch(chunkedHits[0]);
+            sendBatch_1(chunkedHits_1[0]);
+        }
+        catch (error) {
+            console.warn(error);
+        }
     };
     GoogleAnalyticsService.prototype.pushOfflineHits = function (hits) {
         var offline = JSON.parse(window.localStorage.getItem(offlineStorageKey) || "[]");

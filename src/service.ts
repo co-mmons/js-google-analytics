@@ -102,64 +102,70 @@ export class GoogleAnalyticsService {
 
     private sendHits(hits?: string[]) {
 
-        let now = Date.now();
+        try {
 
-        let allHits = this.pullOfflineHits();
-        for (let h of hits) {
+            let now = Date.now();
 
-            if (h) {
+            let allHits = this.pullOfflineHits();
+            for (let h of hits) {
 
-                if (h.indexOf("&tmpts=") < 0) {
-                    h += "&tmpts=" + now;
+                if (h) {
+
+                    if (h.indexOf("&tmpts=") < 0) {
+                        h += "&tmpts=" + now;
+                    }
+
+                    allHits.push(h);
                 }
-
-                allHits.push(h);
             }
-        }
 
-        let chunkedHits = this.chunkArray(allHits, 10);
-        let sendingChunk = 0;
+            let chunkedHits = this.chunkArray(allHits, 10);
+            let sendingChunk = 0;
 
-        let sendBatch = (batchHits: string[]) => {
-            // console.log("send batch");
-            // console.log(batchHits);
+            let sendBatch = (batchHits: string[]) => {
+                // console.log("send batch");
+                // console.log(batchHits);
 
-            let http = new XMLHttpRequest();
-            http.open("POST", "https://www.google-analytics.com/batch", true);
+                let http = new XMLHttpRequest();
+                http.open("POST", "https://www.google-analytics.com/batch", true);
 
-            http.onreadystatechange = () => {
+                http.onreadystatechange = () => {
 
-                if (http.readyState === http.DONE) {
+                    if (http.readyState === http.DONE) {
 
-                    if (http.status !== 200) {
-                        this.pushOfflineHits(batchHits);
+                        if (http.status !== 200) {
+                            this.pushOfflineHits(batchHits);
+                        }
+
+                        if (chunkedHits.length - 1 > sendingChunk) {
+                            sendBatch(chunkedHits[++sendingChunk]);
+                        }
                     }
+                };
 
-                    if (chunkedHits.length - 1 > sendingChunk) {
-                        sendBatch(chunkedHits[++sendingChunk]);
+                let httpPayload: string[] = [];
+
+                for (let h of (batchHits || [])) {
+                    if (h.indexOf("&tmpts=") > -1) {
+                        let t = Math.round(now - parseInt(h.match(/tmpts=([^&]*)/)[1]));
+                        h = h.replace(/tmpts=([^&]*)/, t > 0 ? "qt=" + t : "");
+                        if (t > 10000) {
+                            h += "&cm1=" + Math.round(t / 1000);
+                        }
+                        httpPayload.push(h);
+                    } else {
+                        httpPayload.push(h);
                     }
                 }
+
+                http.send(httpPayload.join("\n"));
             };
 
-            let httpPayload: string[] = [];
+            sendBatch(chunkedHits[0]);
 
-            for (let h of (batchHits || [])) {
-                if (h.indexOf("&tmpts=") > -1) {
-                    let t = Math.round(now - parseInt(h.match(/tmpts=([^&]*)/)[1]));
-                    h = h.replace(/tmpts=([^&]*)/, t > 0 ? "qt=" + t : "");
-                    if (t > 10000) {
-                        h += "&cm1=" + Math.round(t / 1000);
-                    }
-                    httpPayload.push(h);
-                } else {
-                    httpPayload.push(h);
-                }
-            }
-
-            http.send(httpPayload.join("\n"));
-        };
-
-        sendBatch(chunkedHits[0]);
+        } catch (error) {
+            console.warn(error);
+        }
     }
 
     private pushOfflineHits(hits: string[]) {
