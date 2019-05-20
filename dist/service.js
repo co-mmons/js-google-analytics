@@ -106,7 +106,12 @@ var GoogleAnalyticsService = /** @class */ (function () {
             this.batchQueue.push(model.get("hitPayload"));
         }
         else {
-            this.sendHits([model.get("hitPayload")]);
+            try {
+                this.sendHits([model.get("hitPayload")]);
+            }
+            catch (error) {
+                console.warn(error);
+            }
         }
     };
     GoogleAnalyticsService.prototype.sendHits = function (hits) {
@@ -115,10 +120,12 @@ var GoogleAnalyticsService = /** @class */ (function () {
         var allHits = this.pullOfflineHits();
         for (var _i = 0, hits_1 = hits; _i < hits_1.length; _i++) {
             var h = hits_1[_i];
-            if (h.indexOf("&tmpts=") < 0) {
-                h += "&tmpts=" + now;
+            if (h) {
+                if (h.indexOf("&tmpts=") < 0) {
+                    h += "&tmpts=" + now;
+                }
+                allHits.push(h);
             }
-            allHits.push(h);
         }
         var chunkedHits = this.chunkArray(allHits, 10);
         var sendingChunk = 0;

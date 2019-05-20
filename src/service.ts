@@ -92,7 +92,11 @@ export class GoogleAnalyticsService {
         if (this.batchQueue) {
             this.batchQueue.push(model.get("hitPayload"));
         } else {
-            this.sendHits([model.get("hitPayload")]);
+            try {
+                this.sendHits([model.get("hitPayload")]);
+            } catch (error) {
+                console.warn(error);
+            }
         }
     }
 
@@ -103,11 +107,14 @@ export class GoogleAnalyticsService {
         let allHits = this.pullOfflineHits();
         for (let h of hits) {
 
-            if (h.indexOf("&tmpts=") < 0) {
-                h += "&tmpts=" + now;
-            }
+            if (h) {
 
-            allHits.push(h);
+                if (h.indexOf("&tmpts=") < 0) {
+                    h += "&tmpts=" + now;
+                }
+
+                allHits.push(h);
+            }
         }
 
         let chunkedHits = this.chunkArray(allHits, 10);
