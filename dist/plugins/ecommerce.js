@@ -1,17 +1,13 @@
-var GoogleAnalyticsEcommercePlugin = /** @class */ (function () {
-    function GoogleAnalyticsEcommercePlugin() {
-    }
-    GoogleAnalyticsEcommercePlugin.addTransaction = function (tracker, data) {
+export class GoogleAnalyticsEcommercePlugin {
+    static addTransaction(tracker, data) {
         tracker.pluginCall("ecommerce", "addTransaction", data);
-    };
-    GoogleAnalyticsEcommercePlugin.sendTransaction = function (tracker, data) {
+    }
+    static sendTransaction(tracker, data) {
         GoogleAnalyticsEcommercePlugin.addTransaction(tracker, data);
         GoogleAnalyticsEcommercePlugin.send(tracker);
-    };
-    GoogleAnalyticsEcommercePlugin.send = function (tracker) {
+    }
+    static send(tracker) {
         tracker.pluginCall("ecommerce", "send");
-    };
-    return GoogleAnalyticsEcommercePlugin;
-}());
-export { GoogleAnalyticsEcommercePlugin };
+    }
+}
 //# sourceMappingURL=ecommerce.js.map
