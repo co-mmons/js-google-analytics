@@ -1,6 +1,8 @@
-import { __awaiter } from "tslib";
-import { GoogleAnalyticsService } from "./service";
-export class GoogleAnalyticsTracker {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const tslib_1 = require("tslib");
+const service_1 = require("./service");
+class GoogleAnalyticsTracker {
     constructor(service, id, fields) {
         this.service = service;
         fields = Object.assign({}, fields, { cookieDomain: window.location.protocol.indexOf("file") > -1 ? "none" : "auto" });
@@ -28,9 +30,9 @@ export class GoogleAnalyticsTracker {
      * @see Tracking id docs: https://developers.google.com/analytics/devguides/collection/analyticsjs/field-reference.
      */
     static newTracker(id, fields, service) {
-        return __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
             if (!service) {
-                service = new GoogleAnalyticsService();
+                service = new service_1.GoogleAnalyticsService();
             }
             return new GoogleAnalyticsTracker(service, id, fields);
         });
@@ -57,4 +59,5 @@ export class GoogleAnalyticsTracker {
         this.tracker.set(fieldName, fieldValue);
     }
 }
+exports.GoogleAnalyticsTracker = GoogleAnalyticsTracker;
 //# sourceMappingURL=tracker.js.map

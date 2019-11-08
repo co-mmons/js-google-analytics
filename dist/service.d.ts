@@ -28,11 +28,11 @@ export declare class GoogleAnalyticsService {
      * batch queue.
      */
     sendHitTask(model: UniversalAnalytics.Model): void;
-    private sendHits(hits?);
-    private pushOfflineHits(hits);
-    private pullOfflineHits();
-    private chunkArray(arr, len);
-    private static trackerName(id);
+    private sendHits;
+    private pushOfflineHits;
+    private pullOfflineHits;
+    private chunkArray;
+    private static trackerName;
     /**
      * Creates new tracker instance for given id/name.
      *

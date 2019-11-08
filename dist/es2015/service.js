@@ -1,8 +1,10 @@
+"use strict";
 //https://www.simoahava.com/analytics/track-users-who-are-offline-in-google-analytics
-import { __awaiter } from "tslib";
-import { GoogleAnalyticsTracker } from "./tracker";
+Object.defineProperty(exports, "__esModule", { value: true });
+const tslib_1 = require("tslib");
+const tracker_1 = require("./tracker");
 const offlineStorageKey = "googleAnalytics.offlineHits";
-export class GoogleAnalyticsService {
+class GoogleAnalyticsService {
     constructor() {
         this.trackers = {};
     }
@@ -159,13 +161,13 @@ export class GoogleAnalyticsService {
      * @see Tracking id docs: https://developers.google.com/analytics/devguides/collection/analyticsjs/field-reference#trackingId.
      */
     newTracker(id, fields) {
-        return __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
             yield GoogleAnalyticsService.load();
             let instanceId = (fields && fields.name) || GoogleAnalyticsService.trackerName(id);
             if (this.trackers[instanceId]) {
                 throw new Error("Tracker " + instanceId + " already exists");
             }
-            return this.trackers[instanceId] = (yield GoogleAnalyticsTracker.newTracker(id, Object.assign({}, { name: GoogleAnalyticsService.trackerName(id) }, fields), this));
+            return this.trackers[instanceId] = (yield tracker_1.GoogleAnalyticsTracker.newTracker(id, Object.assign({}, { name: GoogleAnalyticsService.trackerName(id) }, fields), this));
         });
     }
     getTracker(id, name) {
@@ -176,5 +178,6 @@ export class GoogleAnalyticsService {
         return tracker;
     }
 }
+exports.GoogleAnalyticsService = GoogleAnalyticsService;
 GoogleAnalyticsService.analyticsUrl = "https://www.google-analytics.com/analytics.js";
 //# sourceMappingURL=service.js.map

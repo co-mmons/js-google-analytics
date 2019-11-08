@@ -6,7 +6,11 @@
   "license": "MIT",
   "scripts": {
     "install": "node-utils-npm-install-dist",
-    "build": "tsc"
+    "build": "node-utils-file-system-glob-delete \"dist/**/*\" && npm run build:es5 && npm run build:esm5 && npm run build:es2015 && npm run build:esm2015 && node-utils-file-system-glob-copy src dist \"**/package.json\"",
+    "build:es5": "tsc && tsc -p tsconfig.json -m commonjs -t es5 --outDir dist",
+    "build:esm5": "tsc && tsc -p tsconfig.json -d false -m es2015 -t es5 --outDir dist/esm5",
+    "build:es2015": "tsc && tsc -p tsconfig.json -d false -m commonjs -t es2015 --outDir dist/es2015",
+    "build:esm2015": "tsc && tsc -p tsconfig.json -d false -m es2015 -t es2015 --outDir dist/esm2015"
   },
   "dependencies": {
     "@co.mmons/node-utils": "git+https://github.com/co-mmons/node-utils.git",
@@ -14,6 +18,13 @@
   },
   "devDependencies": {
     "tslib": "^1.10.0",
-    "typescript": "^2.6.2"
-  }
+    "typescript": "^3.7.2"
+  },
+  "main": "index.js",
+  "module": "esm5/index.js",
+  "es5": "index.js",
+  "esm5": "esm5/index.js",
+  "es2015": "es2015/index.js",
+  "esm2015": "esm2015/index.js",
+  "sideEffects": false
 }

@@ -1,7 +1,7 @@
-import { __awaiter } from "tslib";
+import { __awaiter, __generator } from "tslib";
 import { GoogleAnalyticsService } from "./service";
-export class GoogleAnalyticsTracker {
-    constructor(service, id, fields) {
+var GoogleAnalyticsTracker = /** @class */ (function () {
+    function GoogleAnalyticsTracker(service, id, fields) {
         this.service = service;
         fields = Object.assign({}, fields, { cookieDomain: window.location.protocol.indexOf("file") > -1 ? "none" : "auto" });
         // cookies disabled
@@ -9,15 +9,15 @@ export class GoogleAnalyticsTracker {
             fields["storage"] = "none";
             if (!fields.clientId && window.localStorage) {
                 fields.clientId = window.localStorage.getItem("ga:clientId");
-                ga((tracker) => {
+                ga(function (tracker) {
                     window.localStorage.setItem("ga:clientId", tracker.get("clientId"));
                 });
             }
         }
         this.tracker = ga.create(id, fields);
         this.tracker.set(fields);
-        this.tracker.set("checkProtocolTask", () => null);
-        this.tracker.set("sendHitTask", (model) => service.sendHitTask(model));
+        this.tracker.set("checkProtocolTask", function () { return null; });
+        this.tracker.set("sendHitTask", function (model) { return service.sendHitTask(model); });
         this.name = fields.name;
     }
     /**
@@ -27,34 +27,38 @@ export class GoogleAnalyticsTracker {
      * @param fields Tracking settings.
      * @see Tracking id docs: https://developers.google.com/analytics/devguides/collection/analyticsjs/field-reference.
      */
-    static newTracker(id, fields, service) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (!service) {
-                service = new GoogleAnalyticsService();
-            }
-            return new GoogleAnalyticsTracker(service, id, fields);
+    GoogleAnalyticsTracker.newTracker = function (id, fields, service) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                if (!service) {
+                    service = new GoogleAnalyticsService();
+                }
+                return [2 /*return*/, new GoogleAnalyticsTracker(service, id, fields)];
+            });
         });
-    }
-    pluginRequire(plugin) {
+    };
+    GoogleAnalyticsTracker.prototype.pluginRequire = function (plugin) {
         ga(this.name + ".require", plugin);
-    }
-    pluginCall(plugin, method, callArgs) {
+    };
+    GoogleAnalyticsTracker.prototype.pluginCall = function (plugin, method, callArgs) {
         ga(this.name + "." + plugin + ":" + method, callArgs);
-    }
-    send(hitType, fields) {
+    };
+    GoogleAnalyticsTracker.prototype.send = function (hitType, fields) {
         // console.log("send " + hitType);
         // console.log(this.tracker);
         this.tracker.send(hitType, fields);
         return this;
-    }
-    flush() {
+    };
+    GoogleAnalyticsTracker.prototype.flush = function () {
         this.service.flushBatch();
-    }
-    get(fieldName) {
+    };
+    GoogleAnalyticsTracker.prototype.get = function (fieldName) {
         return this.tracker.get(fieldName);
-    }
-    set(fieldName, fieldValue) {
+    };
+    GoogleAnalyticsTracker.prototype.set = function (fieldName, fieldValue) {
         this.tracker.set(fieldName, fieldValue);
-    }
-}
+    };
+    return GoogleAnalyticsTracker;
+}());
+export { GoogleAnalyticsTracker };
 //# sourceMappingURL=tracker.js.map

@@ -1,0 +1,10 @@
+{
+    "name": "@co.mmons/js-google-analytics/plugins",
+    "main": "index.js",
+    "module": "../esm5/plugins/index.js",
+    "es5": "index.js",
+    "esm5": "../esm5/plugins/index.js",
+    "es2015": "../es2015/plugins/index.js",
+    "esm2015": "../esm2015/plugins/index.js",
+    "sideEffects": false
+}
