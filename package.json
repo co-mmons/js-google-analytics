@@ -11,7 +11,7 @@
     "build:esm2015": "tsc && tsc -p tsconfig.json -d false -m es2015 -t es2015 --outDir dist/_esm2015"
   },
   "dependencies": {
-    "@co.mmons/node-utils": "git+https://github.com/co-mmons/node-utils.git",
+    "@co.mmons/node-utils": "github:co-mmons/node-utils",
     "@types/google.analytics": "^0.0.36"
   },
   "devDependencies": {
