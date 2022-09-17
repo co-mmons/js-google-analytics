@@ -10,13 +10,15 @@
     "build:es2015": "tsc && tsc -p tsconfig.json -d false -m commonjs -t es2015 --outDir dist",
     "build:esm2015": "tsc && tsc -p tsconfig.json -d false -m es2015 -t es2015 --outDir dist/_esm2015"
   },
+  "peerDependencies": {
+    "@co.mmons/node-utils": "github:co-mmons/node-utils"
+  },
   "dependencies": {
-    "@co.mmons/node-utils": "github:co-mmons/node-utils",
     "@types/google.analytics": "^0.0.36"
   },
   "devDependencies": {
-    "tslib": "^2.3.1",
-    "typescript": "4.3.5"
+    "tslib": "^2.0.0",
+    "typescript": "^4.2.0"
   },
   "main": "./index.js",
   "module": "_esm2015/index.js",
